@@ -10,7 +10,7 @@
     "lint:fix": "eslint 'lib/**/*.ts' 'bin/**/*.ts' --fix",
     "format": "prettier --write 'lib/**/*.ts' 'bin/**/*.ts'",
     "format:check": "prettier --check 'lib/**/*.ts' 'bin/**/*.ts'",
-    "pretest": "npx tsc --project ../../services/api/tsconfig.json",
+    "pretest": "cd ../../services/api && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "cdk": "cdk"
