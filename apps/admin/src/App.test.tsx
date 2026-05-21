@@ -6,7 +6,7 @@ import App from './App';
 describe('App', () => {
   it('renders the dashboard title', () => {
     render(<App />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dashboard', level: 2 })).toBeInTheDocument();
   });
 
   it('renders stat cards', () => {

@@ -32,8 +32,8 @@ describe('MapVibeStack', () => {
     });
   });
 
-  it('creates a Lambda function', () => {
-    template.resourceCountIs('AWS::Lambda::Function', 1);
+  it('creates Lambda functions (search + S3 auto-delete)', () => {
+    template.resourceCountIs('AWS::Lambda::Function', 2);
   });
 
   it('creates an API Gateway', () => {
