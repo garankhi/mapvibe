@@ -64,7 +64,19 @@ class AuthService {
     }
   }
 
-  Future<AuthResult> signIn(String username) async {
+  Future<AuthResult> signIn(String rawUsername) async {
+    // 1. Format the username
+    String username = rawUsername.trim();
+    final isEmail = username.contains('@');
+    if (!isEmail) {
+      // Auto format Vietnamese phone numbers if missing country code
+      if (username.startsWith('0')) {
+        username = '+84${username.substring(1)}';
+      } else if (!username.startsWith('+')) {
+        username = '+$username';
+      }
+    }
+
     _username = username;
     _destination = _maskDestination(username);
 
@@ -84,8 +96,15 @@ class AuthService {
         // Expected exception indicating OTP is sent
       } on CognitoClientException catch (e) {
         if (e.code == 'UserNotFoundException') {
-          // Auto sign-up for new users
-          await _userPool.signUp(username, 'MapVibeTempPwd123!');
+          // Auto sign-up for new users with correct attributes
+          final attributes = [
+            AttributeArg(
+              name: isEmail ? 'email' : 'phone_number',
+              value: username,
+            )
+          ];
+          await _userPool.signUp(username, 'MapVibeTempPwd123!', userAttributes: attributes);
+          
           _cognitoUser = CognitoUser(username, _userPool);
           _cognitoUser!.setAuthenticationFlowType('CUSTOM_AUTH');
           try {

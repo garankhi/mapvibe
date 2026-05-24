@@ -26,33 +26,54 @@ export const handler = async (
   const phoneNumber = event.request.userAttributes.phone_number;
   const email = event.request.userAttributes.email;
 
+  // Debug: log which attributes are available (never log OTP or raw values)
+  console.log('Auth challenge requested', {
+    hasPhone: !!phoneNumber,
+    hasEmail: !!email,
+    username: event.userName ? '***' : 'none',
+  });
+
   if (phoneNumber) {
-    await sns.send(
-      new PublishCommand({
-        PhoneNumber: phoneNumber,
-        Message: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.`,
-        MessageAttributes: {
-          'AWS.SNS.SMS.SMSType': {
-            DataType: 'String',
-            StringValue: 'Transactional',
+    try {
+      await sns.send(
+        new PublishCommand({
+          PhoneNumber: phoneNumber,
+          Message: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.`,
+          MessageAttributes: {
+            'AWS.SNS.SMS.SMSType': {
+              DataType: 'String',
+              StringValue: 'Transactional',
+            },
           },
-        },
-      }),
-    );
+        }),
+      );
+      console.log('SMS sent successfully');
+    } catch (err) {
+      console.error('SMS send failed:', err);
+      throw err;
+    }
   } else if (email) {
     const senderEmail = process.env.SES_SENDER_EMAIL || 'noreply@mapvibe.com';
-    await ses.send(
-      new SendEmailCommand({
-        Source: senderEmail,
-        Destination: { ToAddresses: [email] },
-        Message: {
-          Subject: { Data: 'MapVibe - Ma xac thuc' },
-          Body: {
-            Text: { Data: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.` },
+    try {
+      await ses.send(
+        new SendEmailCommand({
+          Source: senderEmail,
+          Destination: { ToAddresses: [email] },
+          Message: {
+            Subject: { Data: 'MapVibe - Ma xac thuc' },
+            Body: {
+              Text: { Data: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.` },
+            },
           },
-        },
-      }),
-    );
+        }),
+      );
+      console.log('Email sent successfully');
+    } catch (err) {
+      console.error('Email send failed:', err);
+      throw err;
+    }
+  } else {
+    console.warn('No phone or email found for user');
   }
 
   event.response.publicChallengeParameters = {

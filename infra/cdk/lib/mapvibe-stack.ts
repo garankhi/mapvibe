@@ -157,7 +157,7 @@ export class MapVibeStack extends cdk.Stack {
       functionName: resourceName(stage, 'create-auth'),
       handler: 'triggers/create-auth-challenge.handler',
       environment: {
-        SES_SENDER_EMAIL: `noreply@mapvibe.com`,
+        SES_SENDER_EMAIL: `tydapchai123@gmail.com`,
       },
     });
 
