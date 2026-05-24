@@ -6,18 +6,7 @@ import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exception}');
-  };
-
-  runZonedGuarded(() {
-    runApp(const MapVibeApp());
-  }, (error, stack) {
-    debugPrint('Unhandled error: $error');
-    debugPrint('Stack: $stack');
-  });
+  runApp(const MapVibeApp());
 }
 
 class MapVibeApp extends StatefulWidget {
