@@ -1,8 +1,48 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:amazon_cognito_identity_dart_2/cognito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 
+// ─── Persistent Cognito Storage ─────────────────────────────────
+/// Stores Cognito tokens (idToken, accessToken, refreshToken, LastAuthUser, etc.)
+/// in SharedPreferences so they survive app restarts.
+class SharedPrefsCognitoStorage extends CognitoStorage {
+  final SharedPreferences prefs;
+
+  SharedPrefsCognitoStorage(this.prefs);
+
+  @override
+  Future<dynamic> getItem(String key) async {
+    final value = prefs.getString(key);
+    return value == null ? null : jsonDecode(value);
+  }
+
+  @override
+  Future<dynamic> setItem(String key, value) async {
+    await prefs.setString(key, jsonEncode(value));
+    return value;
+  }
+
+  @override
+  Future<dynamic> removeItem(String key) async {
+    final oldValue = await getItem(key);
+    await prefs.remove(key);
+    return oldValue;
+  }
+
+  @override
+  Future<void> clear() async {
+    final keys = prefs.getKeys().where(
+      (key) => key.startsWith('CognitoIdentityServiceProvider.'),
+    );
+    for (final key in keys.toList()) {
+      await prefs.remove(key);
+    }
+  }
+}
+
+// ─── Auth State & Result ────────────────────────────────────────
 enum AuthState { loading, unauthenticated, otpSent, authenticated }
 
 class AuthResult {
@@ -13,6 +53,7 @@ class AuthResult {
   const AuthResult({required this.success, this.errorMessage, this.destination});
 }
 
+// ─── Auth Service ───────────────────────────────────────────────
 class AuthService {
   final bool isTestMode;
   
@@ -21,17 +62,13 @@ class AuthService {
   DateTime? _lastOtpSent;
   String? _destination;
 
-  late final CognitoUserPool _userPool;
+  late CognitoUserPool _userPool;
   CognitoUser? _cognitoUser;
 
   static const otpCooldownSeconds = 60;
   static const maxAttempts = 5;
 
-  AuthService({this.isTestMode = false}) {
-    if (!isTestMode) {
-      _userPool = CognitoUserPool(Config.cognitoUserPoolId, Config.cognitoClientId);
-    }
-  }
+  AuthService({this.isTestMode = false});
 
   AuthState get state => _state;
   String? get destination => _destination;
@@ -45,6 +82,7 @@ class AuthService {
 
   bool get canResendOtp => resendCooldownRemaining == 0;
 
+  /// Initialize: create persistent storage, restore session if available.
   Future<void> initialize() async {
     if (isTestMode) {
       _state = AuthState.unauthenticated;
@@ -53,37 +91,37 @@ class AuthService {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedUsername = prefs.getString('cognito_username');
-      
-      if (savedUsername == null || savedUsername.isEmpty) {
+      final storage = SharedPrefsCognitoStorage(prefs);
+
+      _userPool = CognitoUserPool(
+        Config.cognitoUserPoolId,
+        Config.cognitoClientId,
+        storage: storage,
+      );
+
+      // Try to restore cached user
+      final user = await _userPool.getCurrentUser();
+
+      if (user == null) {
         _state = AuthState.unauthenticated;
         return;
       }
 
-      // Restore Cognito user and try to get valid session
-      _cognitoUser = CognitoUser(savedUsername, _userPool);
-      final session = await _cognitoUser!.getSession();
-      
+      // Try to get valid session (auto-refreshes if needed)
+      _cognitoUser = user;
+      final session = await user.getSession();
+
       if (session != null && session.isValid()) {
-        _username = savedUsername;
+        _username = user.getUsername();
         _state = AuthState.authenticated;
       } else {
-        // Session expired and couldn't refresh
-        await _clearSession();
+        await user.signOut();
         _state = AuthState.unauthenticated;
       }
     } catch (_) {
       // Token invalid or network error — force re-login
-      await _clearSession();
       _state = AuthState.unauthenticated;
     }
-  }
-
-  Future<void> _clearSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('cognito_username');
-    _cognitoUser = null;
-    _username = null;
   }
 
   Future<AuthResult> signIn(String rawUsername) async {
@@ -161,11 +199,8 @@ class AuthService {
       final session = await _cognitoUser!.sendCustomChallengeAnswer(code);
       if (session != null && session.isValid()) {
         _state = AuthState.authenticated;
-        
-        // Save username for session restoration on next app launch
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('cognito_username', _username!);
-        
+        // Tokens are automatically cached to SharedPreferences
+        // by the Cognito SDK via SharedPrefsCognitoStorage
         return const AuthResult(success: true);
       } else {
         return const AuthResult(success: false, errorMessage: 'Ma xac thuc sai');
@@ -190,15 +225,12 @@ class AuthService {
 
   Future<void> signOut() async {
     if (!isTestMode && _cognitoUser != null) {
+      // This clears tokens from SharedPrefsCognitoStorage
       await _cognitoUser!.signOut();
     }
-    if (!isTestMode) {
-      await _clearSession();
-    } else {
-      _cognitoUser = null;
-      _username = null;
-    }
     _state = AuthState.unauthenticated;
+    _username = null;
+    _cognitoUser = null;
     _destination = null;
   }
 
@@ -213,5 +245,4 @@ class AuthService {
     if (input.length <= 7) return '***';
     return '${input.substring(0, input.length - 6)}***${input.substring(input.length - 3)}';
   }
-  
 }
