@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   type CandidateFilter,
-  type CandidateSort,
   type ModerationCandidate,
+  type CandidateStatus,
   loadPendingCandidates,
 } from './mockModerationAdapter';
 
@@ -27,25 +27,17 @@ function matchesQuery(candidate: ModerationCandidate, query: string) {
     .includes(normalized);
 }
 
-function applySort(candidates: ModerationCandidate[], sortBy: CandidateSort) {
-  return [...candidates].sort((left, right) => {
-    if (sortBy === 'score') {
-      return right.score - left.score;
-    }
-
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-  });
-}
-
 export default function ModerationPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<CandidateFilter>('all');
-  const [sortBy, setSortBy] = useState<CandidateSort>('newest');
+  const [statusFilter, setStatusFilter] = useState<CandidateStatus | 'all'>('all');
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [simulateError, setSimulateError] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [candidates, setCandidates] = useState<ModerationCandidate[]>([]);
+  const [selected, setSelected] = useState<ModerationCandidate | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -76,17 +68,20 @@ export default function ModerationPage() {
   }, [reloadToken, simulateError]);
 
   const visibleCandidates = useMemo(() => {
-    const filtered = candidates.filter((candidate) => {
+    return candidates.filter((candidate) => {
       const typeMatches = filter === 'all' || candidate.type === filter;
-      return typeMatches && matchesQuery(candidate, search);
+      const statusMatches = statusFilter === 'all' || candidate.status === statusFilter;
+      return typeMatches && statusMatches && matchesQuery(candidate, search);
     });
+  }, [candidates, filter, search, statusFilter]);
 
-    return applySort(filtered, sortBy);
-  }, [candidates, filter, search, sortBy]);
-
-  const handleDecision = (candidateId: string) => {
-    setCandidates((current) => current.filter((candidate) => candidate.id !== candidateId));
+  const handleDecision = (candidateId: string, newStatus: CandidateStatus) => {
+    setCandidates((current) => current.map((c) => (c.id === candidateId ? { ...c, status: newStatus } : c)));
   };
+
+  const totalCount = candidates.length;
+  const pendingCount = candidates.filter((c) => c.status === 'pending').length;
+  const approvedCount = candidates.filter((c) => c.status === 'approved').length;
 
   return (
     <section className="moderation-page">
@@ -109,6 +104,21 @@ export default function ModerationPage() {
           </button>
         </div>
       </header>
+
+      <div className="moderation-summary">
+        <div className="summary-card card">
+          <div className="summary-label">Total</div>
+          <div className="summary-value">{totalCount}</div>
+        </div>
+        <div className="summary-card card">
+          <div className="summary-label">Pending</div>
+          <div className="summary-value">{pendingCount}</div>
+        </div>
+        <div className="summary-card card">
+          <div className="summary-label">Approved</div>
+          <div className="summary-value">{approvedCount}</div>
+        </div>
+      </div>
 
       <div className="moderation-toolbar card">
         <label className="field">
@@ -133,12 +143,16 @@ export default function ModerationPage() {
         </label>
 
         <label className="field">
-          <span className="field-label">Sort</span>
-          <select className="control-input" value={sortBy} onChange={(event) => setSortBy(event.target.value as CandidateSort)}>
-            <option value="newest">Newest first</option>
-            <option value="score">Highest score</option>
+          <span className="field-label">Status</span>
+          <select className="control-input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as CandidateStatus | 'all')}>
+            <option value="pending">Pending</option>
+            <option value="all">All</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
           </select>
         </label>
+
+        {/* Sort removed per request */}
       </div>
 
       {loading ? (
@@ -170,11 +184,11 @@ export default function ModerationPage() {
             <table className="moderation-table">
               <thead>
                 <tr>
-                  <th>Candidate</th>
+                  <th>Name</th>
                   <th>Type</th>
-                  <th>Score</th>
                   <th>Submitted</th>
-                  <th>Reason</th>
+                  <th>Submitted By</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -190,20 +204,23 @@ export default function ModerationPage() {
                     <td>
                       <span className={`type-pill type-${candidate.type}`}>{candidate.type}</span>
                     </td>
-                    <td>
-                      <span className="score-pill">{candidate.score}</span>
-                    </td>
                     <td>{formatDate(candidate.createdAt)}</td>
                     <td>
-                      <div className="candidate-reason">{candidate.reason}</div>
+                      <div className="candidate-submitter">{candidate.submittedBy?.username ?? '—'}</div>
+                    </td>
+                    <td>
+                      <div className={`status-pill status-${candidate.status}`}>{candidate.status}</div>
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button type="button" className="approve-btn" onClick={() => handleDecision(candidate.id)}>
+                        <button type="button" className="approve-btn" onClick={() => handleDecision(candidate.id, 'approved')}>
                           Approve
                         </button>
-                        <button type="button" className="reject-btn" onClick={() => handleDecision(candidate.id)}>
+                        <button type="button" className="reject-btn" onClick={() => handleDecision(candidate.id, 'rejected')}>
                           Reject
+                        </button>
+                        <button type="button" className="secondary-btn" onClick={() => setSelected(candidate)}>
+                          View
                         </button>
                       </div>
                     </td>
@@ -211,6 +228,127 @@ export default function ModerationPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {selected && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card card">
+            <div className="modal-header">
+              <h3 className="card-title">{selected.title}</h3>
+              <button className="secondary-btn" onClick={() => setSelected(null)}>Close</button>
+            </div>
+            <div className="modal-body modal-grid">
+              <div className="modal-left">
+                <div className="modal-row">
+                  <strong>Type:</strong> {selected.type}
+                </div>
+                <div className="modal-row">
+                  <strong>Submitted by:</strong> {selected.submittedBy?.username}
+                </div>
+                <div className="modal-row">
+                  <strong>Submitted:</strong> {formatDate(selected.createdAt)}
+                </div>
+                <div className="modal-row">
+                  <strong>Summary:</strong>
+                  <div className="candidate-reason">{selected.summary}</div>
+                </div>
+
+                {selected.type === 'place' && selected.payload && 'name' in selected.payload && (
+                  <div className="detail-section place-details">
+                    <h4 className="detail-title">Place details</h4>
+                    <div className="detail-row"><strong>Name:</strong> {(selected.payload as any).name}</div>
+                    <div className="detail-row"><strong>Address:</strong> {(selected.payload as any).address}</div>
+                    <div className="detail-row"><strong>Phone:</strong> {(selected.payload as any).phone ?? '—'}</div>
+                    <div className="detail-row"><strong>Description:</strong> {(selected.payload as any).description}</div>
+                    <div className="detail-row"><strong>Amenities:</strong>
+                      <div className="amenities-list">
+                        {Object.entries((selected.payload as any).amenities)
+                          .filter(([, v]) => !!v)
+                          .map(([k]) => (
+                            <span key={k} className={`amenity-pill`}>{k}</span>
+                          ))}
+                      </div>
+                    </div>
+                    {(selected.payload as any).posterReview && (
+                      <div className="poster-review">
+                        <h5 className="detail-subtitle">Poster review</h5>
+                        <div className="rating-stars">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={`star ${i < (selected.payload as any).posterReview.rating ? 'filled' : ''}`}>★</span>
+                          ))}
+                        </div>
+                        <div className="candidate-reason">{(selected.payload as any).posterReview.text}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selected.type === 'review' && selected.payload && 'rating' in selected.payload && (
+                  <div className="detail-section review-details">
+                    <h4 className="detail-title">Review details</h4>
+                    <div className="detail-row"><strong>Rating:</strong>
+                      <div className="rating-stars">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <span key={i} className={`star ${i < (selected.payload as any).rating ? 'filled' : ''}`}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="detail-row"><strong>Feedback:</strong>
+                      <div className="candidate-reason">{(selected.payload as any).feedback}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-right">
+                {/* Images and media */}
+                {selected.type === 'place' && selected.payload && 'images' in (selected.payload as any) && (
+                  <div className="image-galleries">
+                    <div className="gallery">
+                      <div className="gallery-title">Menu</div>
+                      <div className="images-row">
+                        {((selected.payload as any).images.menu || []).map((src: string, i: number) => (
+                          <img key={`m${i}`} src={src} alt={`menu-${i}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="gallery">
+                      <div className="gallery-title">Space</div>
+                      <div className="images-row">
+                        {((selected.payload as any).images.space || []).map((src: string, i: number) => (
+                          <img key={`s${i}`} src={src} alt={`space-${i}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="gallery">
+                      <div className="gallery-title">Dishes</div>
+                      <div className="images-row">
+                        {((selected.payload as any).images.dishes || []).map((src: string, i: number) => (
+                          <img key={`d${i}`} src={src} alt={`dish-${i}`} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selected.type === 'review' && selected.payload && 'images' in (selected.payload as any) && (
+                  <div className="gallery">
+                    <div className="gallery-title">Review images</div>
+                    <div className="images-row">
+                      {((selected.payload as any).images || []).map((src: string, i: number) => (
+                        <img key={`r${i}`} src={src} alt={`review-${i}`} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="approve-btn" onClick={() => { handleDecision(selected.id, 'approved'); setSelected(null); }}>Approve</button>
+              <button className="reject-btn" onClick={() => { handleDecision(selected.id, 'rejected'); setSelected(null); }}>Reject</button>
+            </div>
           </div>
         </div>
       )}

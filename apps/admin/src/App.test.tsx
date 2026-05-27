@@ -35,7 +35,7 @@ describe('App', () => {
 });
 
 describe('ModerationPage', () => {
-  it('supports search, filter, sort, and empty states', async () => {
+  it('supports search, filter, and empty states', async () => {
     render(<ModerationPage />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading moderation queue');
@@ -45,13 +45,6 @@ describe('ModerationPage', () => {
 
     expect(screen.getByText('Spam review on Banh Mi Huynh Hoa')).toBeInTheDocument();
     expect(screen.getByText('Off-topic review for train station')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'score' } });
-
-    await waitFor(() => {
-      const rows = screen.getAllByRole('row');
-      expect(rows[1]).toHaveTextContent('Spam review on Banh Mi Huynh Hoa');
-    });
 
     fireEvent.change(screen.getByPlaceholderText('Search by title, source, or reason'), {
       target: { value: 'no matches here' },

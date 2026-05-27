@@ -35,25 +35,12 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
-}
-
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
 }
 
 /* ─── Layout ─────────────────────────────────────── */
@@ -592,7 +579,7 @@ textarea {
 }
 
 .moderation-count {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-muted);
 }
 
@@ -615,7 +602,7 @@ textarea {
 }
 
 .moderation-table th {
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
@@ -635,18 +622,17 @@ textarea {
 
 .candidate-subtitle,
 .candidate-reason {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
-.type-pill,
-.score-pill {
+.type-pill {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -665,11 +651,6 @@ textarea {
 }
 
 .type-user {
-  color: #86efac;
-}
-
-.score-pill {
-  background: rgba(34, 197, 94, 0.12);
   color: #86efac;
 }
 
@@ -708,4 +689,130 @@ textarea {
   .moderation-table td {
     padding: 14px 16px;
   }
+}
+
+.moderation-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.summary-card {
+  flex: 1;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.summary-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  align-items: center;
+  display: inline-flex;
+  text-transform: capitalize;
+  font-size: 14px;
+  font-weight: 600;
+}
+.status-pending { background: rgba(59,130,246,0.08); color: var(--accent-blue); }
+.status-approved { background: rgba(34,197,94,0.08); color: #86efac; }
+.status-rejected { background: rgba(239,68,68,0.08); color: #fca5a5; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal-card {
+  width: min(1100px, 96%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 18px;
+}
+
+.modal-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-section { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; }
+.detail-title { font-size: 15px; margin-bottom: 8px; }
+.detail-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+.detail-row { margin-bottom: 8px; font-size: 13px; }
+.amenities-list { margin-top: 6px; padding-left: 18px; color: var(--text-secondary); }
+.amenities-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+.amenity-pill {
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.03);
+  color: var(--text-secondary);
+  font-weight:700;
+  text-transform: capitalize;
+}
+
+.rating-stars { display:flex; gap:6px; align-items:center; }
+.star { font-size:16px; color: var(--text-muted); }
+.star.filled { color: var(--accent-orange); }
+.gallery { background: rgba(255,255,255,0.02); padding: 10px; border-radius: 10px; }
+.gallery-title { font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
+
+.modal-row { font-size: 13px; color: var(--text-primary); }
+
+.images-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.images-row img { width: 140px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
+
+.poster-review { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.04); }
+
+.modal-footer { display:flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+@media (max-width: 800px) {
+  .moderation-summary { flex-direction: column; }
+  .modal-card { width: 100%; padding: 12px; }
 }
