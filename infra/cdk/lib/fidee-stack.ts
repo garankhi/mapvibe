@@ -19,33 +19,33 @@ export const MAIN_REGION = 'ap-southeast-1';
 export const CLOUDFRONT_WAF_REGION = 'us-east-1';
 export const SUPPORTED_STAGES = ['dev', 'prod'] as const;
 
-export type MapVibeStage = (typeof SUPPORTED_STAGES)[number];
+export type FideeStage = (typeof SUPPORTED_STAGES)[number];
 
-export function assertMapVibeStage(stage: string): MapVibeStage {
-  if (SUPPORTED_STAGES.includes(stage as MapVibeStage)) {
-    return stage as MapVibeStage;
+export function assertFideeStage(stage: string): FideeStage {
+  if (SUPPORTED_STAGES.includes(stage as FideeStage)) {
+    return stage as FideeStage;
   }
 
   throw new Error(`Unsupported stage "${stage}". Use one of: ${SUPPORTED_STAGES.join(', ')}`);
 }
 
 interface StageProps extends cdk.StackProps {
-  stage: MapVibeStage;
+  stage: FideeStage;
 }
 
-export type MapVibeMediaWafStackProps = StageProps;
+export type FideeMediaWafStackProps = StageProps;
 
-export interface MapVibeStackProps extends StageProps {
+export interface FideeStackProps extends StageProps {
   mediaWebAclArn: string;
 }
 
-const isProd = (stage: MapVibeStage) => stage === 'prod';
-const resourceName = (stage: MapVibeStage, resource: string) => `mapvibe-${stage}-${resource}`;
+const isProd = (stage: FideeStage) => stage === 'prod';
+const resourceName = (stage: FideeStage, resource: string) => `fidee-${stage}-${resource}`;
 
-function applyStageTags(scope: Construct, stage: MapVibeStage) {
-  cdk.Tags.of(scope).add('Project', 'mapvibe');
+function applyStageTags(scope: Construct, stage: FideeStage) {
+  cdk.Tags.of(scope).add('Project', 'fidee');
   cdk.Tags.of(scope).add('Environment', stage);
-  cdk.Tags.of(scope).add('CostCenter', 'mapvibe');
+  cdk.Tags.of(scope).add('CostCenter', 'fidee');
   cdk.Tags.of(scope).add('AutoCleanup', isProd(stage) ? 'false' : 'true');
 
   if (!isProd(stage)) {
@@ -76,7 +76,7 @@ function managedRule(
   };
 }
 
-function rateLimitRule(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty {
+function rateLimitRule(stage: FideeStage): wafv2.CfnWebACL.RuleProperty {
   return {
     name: 'RateLimit',
     priority: 40,
@@ -95,7 +95,7 @@ function rateLimitRule(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty {
   };
 }
 
-function webAclRules(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty[] {
+function webAclRules(stage: FideeStage): wafv2.CfnWebACL.RuleProperty[] {
   return [
     managedRule('AwsCommonRules', 10, 'AWSManagedRulesCommonRuleSet'),
     managedRule('AwsKnownBadInputs', 20, 'AWSManagedRulesKnownBadInputsRuleSet'),
@@ -104,13 +104,13 @@ function webAclRules(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty[] {
   ];
 }
 
-export class MapVibeMediaWafStack extends cdk.Stack {
+export class FideeMediaWafStack extends cdk.Stack {
   public readonly webAclArn: string;
 
-  constructor(scope: Construct, id: string, props: MapVibeMediaWafStackProps) {
+  constructor(scope: Construct, id: string, props: FideeMediaWafStackProps) {
     super(scope, id, props);
 
-    const stage = assertMapVibeStage(props.stage);
+    const stage = assertFideeStage(props.stage);
     applyStageTags(this, stage);
 
     const webAcl = new wafv2.CfnWebACL(this, 'MediaWebAcl', {
@@ -133,11 +133,11 @@ export class MapVibeMediaWafStack extends cdk.Stack {
   }
 }
 
-export class MapVibeStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: MapVibeStackProps) {
+export class FideeStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: FideeStackProps) {
     super(scope, id, props);
 
-    const stage = assertMapVibeStage(props.stage);
+    const stage = assertFideeStage(props.stage);
     applyStageTags(this, stage);
 
     const removalPolicy = isProd(stage) ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;

@@ -1,49 +1,116 @@
+import 'package:fidee_mobile/features/auth/auth_providers.dart';
+import 'package:fidee_mobile/features/auth/login_page.dart';
+import 'package:fidee_mobile/main.dart';
+import 'package:fidee_mobile/screens/home_screen.dart';
+import 'package:fidee_mobile/screens/otp_screen.dart';
+import 'package:fidee_mobile/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mapvibe_mobile/features/auth/login_page.dart';
-import 'package:mapvibe_mobile/main.dart';
-import 'package:mapvibe_mobile/screens/home_screen.dart';
-import 'package:mapvibe_mobile/screens/otp_screen.dart';
-import 'package:mapvibe_mobile/services/auth_service.dart';
 
 void main() {
-  group('MapVibeApp', () {
-    testWidgets('MapVibeApp shows loading then login page', (
+  Widget withAuthScope({
+    required AuthService authService,
+    required Widget child,
+  }) {
+    return ProviderScope(
+      overrides: [authServiceProvider.overrideWithValue(authService)],
+      child: child,
+    );
+  }
+
+  group('FideeApp', () {
+    testWidgets('initializes unauthenticated and shows login page', (
       WidgetTester tester,
     ) async {
       final authService = AuthService(isTestMode: true);
-      await tester.pumpWidget(MapVibeApp(authService: authService));
-      // After initialization, should show phone input
+
+      await tester.pumpWidget(
+        withAuthScope(authService: authService, child: const FideeApp()),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('MAPVIBE'), findsOneWidget);
+
+      expect(find.text('Welcome!'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
     });
   });
 
   group('LoginPage', () {
-    testWidgets('renders input field and button', (WidgetTester tester) async {
+    testWidgets('renders login controls', (WidgetTester tester) async {
       final authService = AuthService(isTestMode: true);
-      await authService.initialize();
-      await tester.pumpWidget(
-        MaterialApp(home: LoginPage(authService: authService)),
-      );
 
-      expect(find.text('Continue with OTP'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
+      await tester.pumpWidget(
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: LoginPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Welcome!'), findsOneWidget);
+      expect(find.text('Email or Phone Number'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Continue with Google'), findsOneWidget);
+      expect(find.byType(TextField), findsNWidgets(2));
     });
 
     testWidgets('validates empty input', (WidgetTester tester) async {
       final authService = AuthService(isTestMode: true);
-      await authService.initialize();
-      await tester.pumpWidget(
-        MaterialApp(home: LoginPage(authService: authService)),
-      );
 
-      await tester.tap(find.text('Continue with OTP'));
+      await tester.pumpWidget(
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: LoginPage()),
+        ),
+      );
       await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+
       expect(
         find.text('Vui long nhap so dien thoai hoac email'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('toggles password visibility', (WidgetTester tester) async {
+      final authService = AuthService(isTestMode: true);
+
+      await tester.pumpWidget(
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: LoginPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.visibility));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+    });
+
+    testWidgets('successful sign in navigates to OTP screen', (
+      WidgetTester tester,
+    ) async {
+      final authService = AuthService(isTestMode: true);
+
+      await tester.pumpWidget(
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: LoginPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'test@example.com');
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OtpScreen), findsOneWidget);
     });
   });
 
@@ -52,9 +119,14 @@ void main() {
       final authService = AuthService(isTestMode: true);
       await authService.initialize();
       await authService.signIn('+84912345678');
+
       await tester.pumpWidget(
-        MaterialApp(home: OtpScreen(authService: authService)),
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: OtpScreen()),
+        ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNWidgets(6));
       expect(find.text('Xac nhan'), findsOneWidget);
@@ -64,9 +136,14 @@ void main() {
       final authService = AuthService(isTestMode: true);
       await authService.initialize();
       await authService.signIn('+84912345678');
+
       await tester.pumpWidget(
-        MaterialApp(home: OtpScreen(authService: authService)),
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: OtpScreen()),
+        ),
       );
+      await tester.pump();
 
       expect(find.textContaining('Gui lai ma sau'), findsOneWidget);
     });
@@ -75,16 +152,18 @@ void main() {
   group('HomeScreen', () {
     testWidgets('renders map and UI elements', (WidgetTester tester) async {
       final authService = AuthService(isTestMode: true);
+
       await tester.pumpWidget(
-        MaterialApp(home: HomeScreen(authService: authService)),
+        withAuthScope(
+          authService: authService,
+          child: const MaterialApp(home: HomeScreen()),
+        ),
       );
 
-      // Pump multiple frames to get past loading
       for (int i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 500));
       }
 
-      // Check-in button should be present after map loads
       expect(find.byType(HomeScreen), findsOneWidget);
     });
   });

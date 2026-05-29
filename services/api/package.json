@@ -1,8 +1,8 @@
 {
-  "name": "@mapvibe/api",
+  "name": "@fidee/api",
   "version": "0.0.1",
   "private": true,
-  "description": "MapVibe Lambda microservices",
+  "description": "Fidee Lambda microservices",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

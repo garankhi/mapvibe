@@ -29,7 +29,7 @@ class NearbyService {
       },
       "data": [
         {
-          "id": "place_mapvibe_001",
+          "id": "place_fidee_001",
           "place_id": "goong_pid_98765",
           "source": "goong_places",
           "display_name": "Bitexco Financial Tower",
@@ -41,7 +41,7 @@ class NearbyService {
           "actions": {"primary": "attach_place_to_photo"},
         },
         {
-          "id": "place_mapvibe_002",
+          "id": "place_fidee_002",
           "place_id": "goong_pid_43210",
           "source": "goong_places",
           "display_name": "Katinat Saigon Kafe",
@@ -53,7 +53,7 @@ class NearbyService {
           "actions": {"primary": "attach_place_to_photo"},
         },
         {
-          "id": "place_mapvibe_003",
+          "id": "place_fidee_003",
           "place_id": "goong_pid_55555",
           "source": "goong_places",
           "display_name": "The Coffee House - Hai Trieu",

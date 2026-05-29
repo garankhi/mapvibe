@@ -205,7 +205,7 @@ class AuthService {
           ];
           await _userPool.signUp(
             username,
-            'MapVibeTempPwd123!',
+            'FideeTempPwd123!',
             userAttributes: attributes,
           );
 

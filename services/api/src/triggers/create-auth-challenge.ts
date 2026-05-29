@@ -38,7 +38,7 @@ export const handler = async (
       await sns.send(
         new PublishCommand({
           PhoneNumber: phoneNumber,
-          Message: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.`,
+          Message: `Fidee: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.`,
           MessageAttributes: {
             'AWS.SNS.SMS.SMSType': {
               DataType: 'String',
@@ -53,16 +53,16 @@ export const handler = async (
       throw err;
     }
   } else if (email) {
-    const senderEmail = process.env.SES_SENDER_EMAIL || 'noreply@mapvibe.com';
+    const senderEmail = process.env.SES_SENDER_EMAIL || 'noreply@fidee.com';
     try {
       await ses.send(
         new SendEmailCommand({
           Source: senderEmail,
           Destination: { ToAddresses: [email] },
           Message: {
-            Subject: { Data: 'MapVibe - Ma xac thuc' },
+            Subject: { Data: 'Fidee - Ma xac thuc' },
             Body: {
-              Text: { Data: `MapVibe: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.` },
+              Text: { Data: `Fidee: Ma xac thuc cua ban la ${otp}. Hieu luc 5 phut.` },
             },
           },
         }),

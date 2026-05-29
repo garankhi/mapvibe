@@ -1,24 +1,25 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import '../services/auth_service.dart';
+
+import '../features/auth/auth_providers.dart';
 import '../services/location_service.dart';
-import '../features/auth/login_page.dart';
 import 'nearby_places_sheet.dart';
 
 /// Home screen with OpenStreetMap, current location, and check-in CTA.
-class HomeScreen extends StatefulWidget {
-  final AuthService authService;
-
-  const HomeScreen({super.key, required this.authService});
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with TickerProviderStateMixin {
   final LocationService _locationService = LocationService();
   final MapController _mapController = MapController();
   bool _isLoading = true;
@@ -57,14 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _signOut(BuildContext context) async {
-    await widget.authService.signOut();
-    if (!context.mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(
-        builder: (_) => LoginPage(authService: widget.authService),
-      ),
-      (route) => false,
-    );
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   void _onCheckIn() async {
@@ -138,9 +132,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               // Dark-style tile layer
               TileLayer(
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.mapvibe.mapvibe_mobile',
+                userAgentPackageName: 'com.fidee.fidee_mobile',
                 maxZoom: 20,
               ),
 
@@ -184,7 +179,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Row(
                       children: [
                         const SizedBox(width: 16),
-                        Icon(Icons.search, color: Colors.white.withValues(alpha: 0.5), size: 20),
+                        Icon(
+                          Icons.search,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          size: 20,
+                        ),
                         const SizedBox(width: 10),
                         Text(
                           'Tim kiem dia diem...',
@@ -218,7 +217,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ],
@@ -241,7 +244,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   }
                   if (!mounted) return;
                   setState(() {
-                    _showLocationBanner = _locationService.status != LocationStatus.granted;
+                    _showLocationBanner =
+                        _locationService.status != LocationStatus.granted;
                   });
                   if (_locationService.hasRealLocation) {
                     _animateToLocation(_locationService.currentPosition);
@@ -271,9 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             bottom: 40,
             left: 0,
             right: 0,
-            child: Center(
-              child: _CheckInButton(onPressed: _onCheckIn),
-            ),
+            child: Center(child: _CheckInButton(onPressed: _onCheckIn)),
           ),
         ],
       ),
@@ -287,70 +289,70 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // Profile header
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(32),
+            // Profile header
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 32),
+                borderRadius: BorderRadius.circular(32),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'MapVibe User',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: const Icon(Icons.person, color: Colors.white, size: 32),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Fidee User',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 32),
 
-              // Sign out
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _signOut(context);
-                  },
-                  icon: const Icon(Icons.logout, size: 20),
-                  label: const Text('Dang xuat', style: TextStyle(fontSize: 16)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.15),
-                    foregroundColor: const Color(0xFFEF4444),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            // Sign out
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _signOut(context);
+                },
+                icon: const Icon(Icons.logout, size: 20),
+                label: const Text('Dang xuat', style: TextStyle(fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(
+                    0xFFEF4444,
+                  ).withValues(alpha: 0.15),
+                  foregroundColor: const Color(0xFFEF4444),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
@@ -377,9 +379,10 @@ class _PulsingLocationMarkerState extends State<_PulsingLocationMarker>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -401,7 +404,9 @@ class _PulsingLocationMarkerState extends State<_PulsingLocationMarker>
             height: 60 * _animation.value,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF3B82F6).withValues(alpha: 0.2 * (1 - _animation.value)),
+              color: const Color(
+                0xFF3B82F6,
+              ).withValues(alpha: 0.2 * (1 - _animation.value)),
             ),
           ),
           // Inner dot
@@ -590,12 +595,19 @@ class _LocationDeniedBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text(_buttonText, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(
+              _buttonText,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: onDismiss,
-            child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.4), size: 18),
+            child: Icon(
+              Icons.close,
+              color: Colors.white.withValues(alpha: 0.4),
+              size: 18,
+            ),
           ),
         ],
       ),
