@@ -82,7 +82,7 @@ export default function App() {
         <div className="sidebar-brand">
           <span className="brand-icon">🗺️</span>
           <div>
-            <h1 className="brand-text">MapVibe</h1>
+            <h1 className="brand-text">Fidee</h1>
             <span className="brand-badge">Admin</span>
           </div>
         </div>

@@ -4,10 +4,14 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
@@ -15,33 +19,33 @@ export const MAIN_REGION = 'ap-southeast-1';
 export const CLOUDFRONT_WAF_REGION = 'us-east-1';
 export const SUPPORTED_STAGES = ['dev', 'prod'] as const;
 
-export type MapVibeStage = (typeof SUPPORTED_STAGES)[number];
+export type FideeStage = (typeof SUPPORTED_STAGES)[number];
 
-export function assertMapVibeStage(stage: string): MapVibeStage {
-  if (SUPPORTED_STAGES.includes(stage as MapVibeStage)) {
-    return stage as MapVibeStage;
+export function assertFideeStage(stage: string): FideeStage {
+  if (SUPPORTED_STAGES.includes(stage as FideeStage)) {
+    return stage as FideeStage;
   }
 
   throw new Error(`Unsupported stage "${stage}". Use one of: ${SUPPORTED_STAGES.join(', ')}`);
 }
 
 interface StageProps extends cdk.StackProps {
-  stage: MapVibeStage;
+  stage: FideeStage;
 }
 
-export type MapVibeMediaWafStackProps = StageProps;
+export type FideeMediaWafStackProps = StageProps;
 
-export interface MapVibeStackProps extends StageProps {
+export interface FideeStackProps extends StageProps {
   mediaWebAclArn: string;
 }
 
-const isProd = (stage: MapVibeStage) => stage === 'prod';
-const resourceName = (stage: MapVibeStage, resource: string) => `mapvibe-${stage}-${resource}`;
+const isProd = (stage: FideeStage) => stage === 'prod';
+const resourceName = (stage: FideeStage, resource: string) => `fidee-${stage}-${resource}`;
 
-function applyStageTags(scope: Construct, stage: MapVibeStage) {
-  cdk.Tags.of(scope).add('Project', 'mapvibe');
+function applyStageTags(scope: Construct, stage: FideeStage) {
+  cdk.Tags.of(scope).add('Project', 'fidee');
   cdk.Tags.of(scope).add('Environment', stage);
-  cdk.Tags.of(scope).add('CostCenter', 'mapvibe');
+  cdk.Tags.of(scope).add('CostCenter', 'fidee');
   cdk.Tags.of(scope).add('AutoCleanup', isProd(stage) ? 'false' : 'true');
 
   if (!isProd(stage)) {
@@ -72,7 +76,7 @@ function managedRule(
   };
 }
 
-function rateLimitRule(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty {
+function rateLimitRule(stage: FideeStage): wafv2.CfnWebACL.RuleProperty {
   return {
     name: 'RateLimit',
     priority: 40,
@@ -91,7 +95,7 @@ function rateLimitRule(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty {
   };
 }
 
-function webAclRules(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty[] {
+function webAclRules(stage: FideeStage): wafv2.CfnWebACL.RuleProperty[] {
   return [
     managedRule('AwsCommonRules', 10, 'AWSManagedRulesCommonRuleSet'),
     managedRule('AwsKnownBadInputs', 20, 'AWSManagedRulesKnownBadInputsRuleSet'),
@@ -100,13 +104,13 @@ function webAclRules(stage: MapVibeStage): wafv2.CfnWebACL.RuleProperty[] {
   ];
 }
 
-export class MapVibeMediaWafStack extends cdk.Stack {
+export class FideeMediaWafStack extends cdk.Stack {
   public readonly webAclArn: string;
 
-  constructor(scope: Construct, id: string, props: MapVibeMediaWafStackProps) {
+  constructor(scope: Construct, id: string, props: FideeMediaWafStackProps) {
     super(scope, id, props);
 
-    const stage = assertMapVibeStage(props.stage);
+    const stage = assertFideeStage(props.stage);
     applyStageTags(this, stage);
 
     const webAcl = new wafv2.CfnWebACL(this, 'MediaWebAcl', {
@@ -129,11 +133,11 @@ export class MapVibeMediaWafStack extends cdk.Stack {
   }
 }
 
-export class MapVibeStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: MapVibeStackProps) {
+export class FideeStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: FideeStackProps) {
     super(scope, id, props);
 
-    const stage = assertMapVibeStage(props.stage);
+    const stage = assertFideeStage(props.stage);
     applyStageTags(this, stage);
 
     const removalPolicy = isProd(stage) ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
@@ -157,17 +161,10 @@ export class MapVibeStack extends cdk.Stack {
       functionName: resourceName(stage, 'create-auth'),
       handler: 'triggers/create-auth-challenge.handler',
       environment: {
-        SES_SENDER_EMAIL: `tydapchai123@gmail.com`,
-      },
+        RESEND_API_KEY: process.env.RESEND_API_KEY || '', RESEND_SENDER_EMAIL: process.env.RESEND_SENDER_EMAIL || 'onboarding@resend.dev', },
     });
 
-    // Grant SNS publish for SMS (resource must be * for phone number targets)
-    createAuthChallengeFn.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['sns:Publish'],
-        resources: ['*'],
-      }),
-    );
+    // Grant SES send email
     createAuthChallengeFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ses:SendEmail'],
@@ -191,19 +188,13 @@ export class MapVibeStack extends cdk.Stack {
     const userPool = new cognito.UserPool(this, 'UserPool', {
       userPoolName: resourceName(stage, 'users'),
       selfSignUpEnabled: true,
-      signInAliases: { email: true, phone: true },
-      autoVerify: { email: true, phone: true },
+      signInAliases: { email: true },
+      autoVerify: { email: true },
       passwordPolicy: {
         minLength: 8,
         requireUppercase: true,
         requireDigits: true,
         requireSymbols: false,
-      },
-      lambdaTriggers: {
-        defineAuthChallenge: defineAuthChallengeFn,
-        createAuthChallenge: createAuthChallengeFn,
-        verifyAuthChallengeResponse: verifyAuthChallengeFn,
-        preSignUp: preSignUpFn,
       },
       removalPolicy,
     });
@@ -226,13 +217,21 @@ export class MapVibeStack extends cdk.Stack {
     });
 
     const userPoolClient = userPool.addClient('WebClient', {
-      authFlows: { userSrp: true, custom: true },
+      authFlows: { userSrp: true, userPassword: true },
     });
 
     const placesTable = new dynamodb.Table(this, 'PlacesTable', {
       tableName: resourceName(stage, 'places'),
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'expiresAt',
+      removalPolicy,
+    });
+
+    const userProfilesTable = new dynamodb.Table(this, 'UserProfilesTable', {
+      tableName: resourceName(stage, 'user-profiles'),
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       timeToLiveAttribute: 'expiresAt',
       removalPolicy,
@@ -252,6 +251,7 @@ export class MapVibeStack extends cdk.Stack {
       removalPolicy,
       autoDeleteObjects: !isProd(stage),
     });
+    mediaBucket.enableEventBridgeNotification();
 
     const mediaDistribution = new cloudfront.Distribution(this, 'MediaDistribution', {
       comment: resourceName(stage, 'media'),
@@ -315,6 +315,58 @@ export class MapVibeStack extends cdk.Stack {
       },
     });
 
+    const createMediaUploadFn = new lambda.Function(this, 'CreateMediaUploadFunction', {
+      functionName: resourceName(stage, 'create-media-upload'),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handlers/create-media-upload.handler',
+      code: lambda.Code.fromAsset('../../services/api/dist'),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        STAGE: stage,
+        MEDIA_BUCKET: mediaBucket.bucketName,
+        USER_PROFILES_TABLE: userProfilesTable.tableName,
+        UPLOAD_EXPIRY_SECONDS: '300',
+      },
+    });
+    userProfilesTable.grantReadData(createMediaUploadFn);
+    mediaBucket.grantPut(createMediaUploadFn, 'uploads/*');
+
+    const mediaUploadEventsDlq = new sqs.Queue(this, 'MediaUploadEventsDlq', {
+      queueName: resourceName(stage, 'media-upload-events-dlq'),
+      retentionPeriod: cdk.Duration.days(14),
+    });
+
+    const mediaUploadEventsQueue = new sqs.Queue(this, 'MediaUploadEventsQueue', {
+      queueName: resourceName(stage, 'media-upload-events'),
+      retentionPeriod: cdk.Duration.days(4),
+      visibilityTimeout: cdk.Duration.seconds(90),
+      deadLetterQueue: {
+        queue: mediaUploadEventsDlq,
+        maxReceiveCount: 3,
+      },
+    });
+
+    const handleMediaUploadedFn = new lambda.Function(this, 'HandleMediaUploadedFunction', {
+      functionName: resourceName(stage, 'handle-media-uploaded'),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handlers/handle-media-uploaded.handler',
+      code: lambda.Code.fromAsset('../../services/api/dist'),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(30),
+      environment: {
+        STAGE: stage,
+        PLACES_TABLE: placesTable.tableName,
+        MEDIA_BUCKET: mediaBucket.bucketName,
+      },
+    });
+    mediaBucket.grantRead(handleMediaUploadedFn, 'uploads/*');
+    placesTable.grantWriteData(handleMediaUploadedFn);
+    mediaUploadEventsQueue.grantConsumeMessages(handleMediaUploadedFn);
+    handleMediaUploadedFn.addEventSource(
+      new lambdaEventSources.SqsEventSource(mediaUploadEventsQueue, { batchSize: 10 }),
+    );
+
     const api = new apigateway.RestApi(this, 'Api', {
       restApiName: resourceName(stage, 'api'),
       deployOptions: {
@@ -348,6 +400,30 @@ export class MapVibeStack extends cdk.Stack {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
+
+    const mediaResource = api.root.addResource('media');
+    const mediaUploadsResource = mediaResource.addResource('uploads');
+    mediaUploadsResource.addMethod('POST', new apigateway.LambdaIntegration(createMediaUploadFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const mediaUploadObjectCreatedRule = new events.Rule(this, 'MediaUploadObjectCreatedRule', {
+      ruleName: resourceName(stage, 'media-upload-object-created'),
+      eventPattern: {
+        source: ['aws.s3'],
+        detailType: ['Object Created'],
+        detail: {
+          bucket: {
+            name: [mediaBucket.bucketName],
+          },
+          object: {
+            key: [{ prefix: 'uploads/' }],
+          },
+        },
+      },
+    });
+    mediaUploadObjectCreatedRule.addTarget(new targets.SqsQueue(mediaUploadEventsQueue));
 
     const apiWebAcl = new wafv2.CfnWebACL(this, 'ApiWebAcl', {
       name: resourceName(stage, 'api-waf'),
@@ -383,6 +459,10 @@ export class MapVibeStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, 'PlacesTableName', { value: placesTable.tableName });
+    new cdk.CfnOutput(this, 'UserProfilesTableName', { value: userProfilesTable.tableName });
+    new cdk.CfnOutput(this, 'MediaUploadEventsQueueUrl', {
+      value: mediaUploadEventsQueue.queueUrl,
+    });
     new cdk.CfnOutput(this, 'MediaBucketName', { value: mediaBucket.bucketName });
     new cdk.CfnOutput(this, 'MediaDistributionDomainName', {
       value: mediaDistribution.distributionDomainName,
