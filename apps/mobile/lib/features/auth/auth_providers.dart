@@ -6,6 +6,7 @@ part 'auth_providers.g.dart';
 
 class AuthUiState {
   final AuthState authState;
+  final UserTier tier;
   final String? destination;
   final int resendCooldownRemaining;
   final bool isSubmitting;
@@ -14,6 +15,7 @@ class AuthUiState {
 
   const AuthUiState({
     required this.authState,
+    this.tier = UserTier.free,
     this.destination,
     this.resendCooldownRemaining = 0,
     this.isSubmitting = false,
@@ -29,6 +31,7 @@ class AuthUiState {
   }) {
     return AuthUiState(
       authState: service.state,
+      tier: service.tier,
       destination: service.destination,
       resendCooldownRemaining: service.resendCooldownRemaining,
       isSubmitting: isSubmitting,
@@ -39,6 +42,7 @@ class AuthUiState {
 
   AuthUiState copyWith({
     AuthState? authState,
+    UserTier? tier,
     String? destination,
     int? resendCooldownRemaining,
     bool? isSubmitting,
@@ -48,6 +52,7 @@ class AuthUiState {
   }) {
     return AuthUiState(
       authState: authState ?? this.authState,
+      tier: tier ?? this.tier,
       destination: destination ?? this.destination,
       resendCooldownRemaining:
           resendCooldownRemaining ?? this.resendCooldownRemaining,
@@ -164,3 +169,4 @@ class AuthController extends _$AuthController {
         const AuthUiState(authState: AuthState.unauthenticated);
   }
 }
+

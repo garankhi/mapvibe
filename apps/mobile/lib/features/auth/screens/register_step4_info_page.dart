@@ -22,36 +22,44 @@ class _RegisterStep4State extends State<RegisterStep4InfoPage> {
     // TODO: Save to temp state/provider
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RegisterStep5UsernamePage()),
+      MaterialPageRoute<void>(builder: (_) => const RegisterStep5UsernamePage()),
     );
   }
 
   void _showDatePicker() {
-    showCupertinoModalPopup(
+    showCupertinoModalPopup<void>(
       context: context,
-      builder: (_) => Container(
-        height: 250,
-        color: const Color.fromARGB(255, 255, 255, 255),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 180,
-              child: CupertinoDatePicker(
-                initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
-                mode: CupertinoDatePickerMode.date,
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: (val) {
-                  setState(() {
-                    _selectedDate = val;
-                  });
-                },
+      builder: (_) => CupertinoTheme(
+        data: const CupertinoThemeData(
+          brightness: Brightness.light,
+          textTheme: CupertinoTextThemeData(
+            dateTimePickerTextStyle: TextStyle(color: Colors.black, fontSize: 21),
+          ),
+        ),
+        child: Container(
+          height: 250,
+          color: Colors.white,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoDatePicker(
+                  initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
+                  mode: CupertinoDatePickerMode.date,
+                  maximumDate: DateTime.now(),
+                  onDateTimeChanged: (val) {
+                    setState(() {
+                      _selectedDate = val;
+                    });
+                  },
+                ),
               ),
-            ),
-            CupertinoButton(
-              child: const Text('Xong'),
-              onPressed: () => Navigator.of(context).pop(),
-            )
-          ],
+              CupertinoButton(
+                child: const Text('Xong', style: TextStyle(color: Color(0xFFEF4050))),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -136,3 +144,5 @@ class _RegisterStep4State extends State<RegisterStep4InfoPage> {
     );
   }
 }
+
+

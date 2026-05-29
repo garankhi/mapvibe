@@ -157,7 +157,7 @@ class LoginForm extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const RegisterStep1EmailPage()),
+                  MaterialPageRoute<void>(builder: (_) => const RegisterStep1EmailPage()),
                 );
               },
               child: Text('Create an account', style: LoginTextStyles.action()),
@@ -174,3 +174,4 @@ class LoginForm extends StatelessWidget {
     );
   }
 }
+

@@ -52,7 +52,7 @@ class _RegisterStep2State extends ConsumerState<RegisterStep2OtpPage> {
     // We explicitly navigate to Step 3 here.
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RegisterStep3NamePage()),
+      MaterialPageRoute<void>(builder: (_) => const RegisterStep3NamePage()),
     );
   }
 
@@ -102,7 +102,7 @@ class _RegisterStep2State extends ConsumerState<RegisterStep2OtpPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("Chưa nhận được mã? ", style: LoginTextStyles.fieldText()),
+              Text('Chưa nhận được mã? ', style: LoginTextStyles.fieldText()),
               TextButton(
                 onPressed: () => ref.read(authControllerProvider.notifier).resendOtp(),
                 style: TextButton.styleFrom(
@@ -150,3 +150,4 @@ class OutlineBorder extends OutlineInputBorder {
           borderSide: BorderSide(color: color, width: 1.5),
         );
 }
+

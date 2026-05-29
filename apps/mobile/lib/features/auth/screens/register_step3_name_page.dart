@@ -27,7 +27,7 @@ class _RegisterStep3State extends State<RegisterStep3NamePage> {
     // TODO: Save to temp state/provider
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RegisterStep4InfoPage()),
+      MaterialPageRoute<void>(builder: (_) => const RegisterStep4InfoPage()),
     );
   }
 
@@ -89,3 +89,4 @@ class _RegisterStep3State extends State<RegisterStep3NamePage> {
     );
   }
 }
+

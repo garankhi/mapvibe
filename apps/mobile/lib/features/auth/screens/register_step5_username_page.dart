@@ -26,7 +26,7 @@ class _RegisterStep5State extends State<RegisterStep5UsernamePage> {
     // For now, jump to Home
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
       (route) => false,
     );
   }
@@ -82,3 +82,4 @@ class _RegisterStep5State extends State<RegisterStep5UsernamePage> {
     );
   }
 }
+

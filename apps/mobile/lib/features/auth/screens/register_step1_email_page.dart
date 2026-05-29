@@ -51,7 +51,7 @@ class _RegisterStep1State extends ConsumerState<RegisterStep1EmailPage> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RegisterStep2OtpPage()),
+      MaterialPageRoute<void>(builder: (_) => const RegisterStep2OtpPage()),
     );
   }
 
@@ -183,3 +183,4 @@ class _RegisterStep1State extends ConsumerState<RegisterStep1EmailPage> {
     );
   }
 }
+

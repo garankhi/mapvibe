@@ -3,13 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/auth/auth_providers.dart';
 import 'features/auth/login_page.dart';
-// NOTE: Bỏ comment dòng dưới để test nhanh từng màn hình
-// import 'features/auth/screens/register_step1_email_page.dart';
-import 'features/auth/screens/register_step2_otp_page.dart';
 import 'features/auth/screens/register_step3_name_page.dart';
-// import 'features/auth/screens/register_step4_info_page.dart';
-// import 'features/auth/screens/register_step5_username_page.dart';
-import 'screens/home_screen.dart';
+import 'screens/camera_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -49,7 +44,7 @@ class FideeApp extends ConsumerWidget {
         error: (_, _) => const LoginPage(),
         data: (state) {
           if (state.authState == AuthState.authenticated) {
-            return const HomeScreen();
+            return const CameraScreen();
           } else if (state.authState == AuthState.incompleteProfile) {
             // BEST PRACTICE: Bắt lỗi đăng ký dở dang, ép vào màn nhập Tên
             return const RegisterStep3NamePage();

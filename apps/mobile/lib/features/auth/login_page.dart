@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../screens/otp_screen.dart';
 import 'auth_providers.dart';
 import 'login_design.dart';
 import 'widgets/login_form.dart';

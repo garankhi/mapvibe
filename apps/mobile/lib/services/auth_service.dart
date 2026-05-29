@@ -74,6 +74,8 @@ class SecureCognitoStorage extends CognitoStorage {
 // Auth state and result.
 enum AuthState { loading, unauthenticated, otpSent, authenticated, incompleteProfile }
 
+enum UserTier { free, pro }
+
 class AuthResult {
   final bool success;
   final String? errorMessage;
@@ -94,6 +96,7 @@ class AuthService {
   String? _username;
   DateTime? _lastOtpSent;
   String? _destination;
+  UserTier _tier = UserTier.free;
 
   late CognitoUserPool _userPool;
   CognitoUser? _cognitoUser;
@@ -104,6 +107,7 @@ class AuthService {
   AuthService({this.isTestMode = false});
 
   AuthState get state => _state;
+  UserTier get tier => _tier;
   String? get destination => _destination;
 
   int get resendCooldownRemaining {
@@ -158,7 +162,13 @@ class AuthService {
             // For example, checking if 'given_name' or 'name' or 'preferred_username' is set
             if (attr.getName() == 'given_name' && (attr.getValue()?.isNotEmpty ?? false)) {
               hasName = true;
-              break;
+            }
+            if (attr.getName() == 'custom:tier') {
+              if (attr.getValue() == 'pro') {
+                _tier = UserTier.pro;
+              } else {
+                _tier = UserTier.free;
+              }
             }
           }
         }
@@ -364,3 +374,9 @@ class AuthService {
         '${input.substring(input.length - 3)}';
   }
 }
+
+
+
+
+
+
