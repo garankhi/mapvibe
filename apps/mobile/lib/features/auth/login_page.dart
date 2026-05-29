@@ -29,19 +29,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _submit() async {
     final input = _usernameController.text.trim();
+    final pwd = _passwordController.text;
     final controller = ref.read(authControllerProvider.notifier);
 
-    if (input.isEmpty) {
-      controller.setError('Vui lòng nhập số điện thoại hoặc email');
+    if (input.isEmpty || pwd.isEmpty) {
+      controller.setError('Vui lòng nhập email và mật khẩu');
       return;
     }
 
-    final result = await controller.signIn(input);
+    final result = await controller.signIn(input, pwd);
     if (!mounted || !result.success) return;
-
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const OtpScreen()));
   }
 
   @override
@@ -82,6 +79,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     });
                   },
                   onSubmit: _submit,
+                  onGoogleSignIn: () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
                 ),
               ),
             ],

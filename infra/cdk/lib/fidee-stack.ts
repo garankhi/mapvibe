@@ -196,12 +196,6 @@ export class FideeStack extends cdk.Stack {
         requireDigits: true,
         requireSymbols: false,
       },
-      lambdaTriggers: {
-        defineAuthChallenge: defineAuthChallengeFn,
-        createAuthChallenge: createAuthChallengeFn,
-        verifyAuthChallengeResponse: verifyAuthChallengeFn,
-        preSignUp: preSignUpFn,
-      },
       removalPolicy,
     });
 
@@ -223,7 +217,7 @@ export class FideeStack extends cdk.Stack {
     });
 
     const userPoolClient = userPool.addClient('WebClient', {
-      authFlows: { userSrp: true, custom: true },
+      authFlows: { userSrp: true, userPassword: true },
     });
 
     const placesTable = new dynamodb.Table(this, 'PlacesTable', {

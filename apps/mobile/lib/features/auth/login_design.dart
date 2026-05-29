@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+// Since SF-Pro is an Apple system font and cannot be easily bundled due to licensing,
+// we fall back to standard sans-serif which is Roboto on Android and SF-Pro on iOS.
+// For a pure cross-platform SF-Pro look, one would need to manually download the TTF
+// from Apple, place it in assets, and configure pubspec.yaml. 
+// For now, we use the default text theme which maps to system defaults (SF Pro on iOS).
+TextStyle _baseTextStyle() => const TextStyle(fontFamily: '.SF Pro Text');
 
 class LoginColors {
   static const red = Color(0xFFEF4050);
@@ -26,7 +32,7 @@ class LoginRadii {
 
 class LoginTextStyles {
   static TextStyle title() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: LoginColors.textPrimary,
       fontSize: 36,
       fontWeight: FontWeight.w700,
@@ -35,16 +41,16 @@ class LoginTextStyles {
   }
 
   static TextStyle fieldText() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: LoginColors.textMuted,
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: FontWeight.w500,
       letterSpacing: 0,
     );
   }
 
   static TextStyle fieldLabel() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: LoginColors.textMuted,
       fontSize: 15,
       fontWeight: FontWeight.w700,
@@ -53,7 +59,7 @@ class LoginTextStyles {
   }
 
   static TextStyle action({Color color = LoginColors.red}) {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: color,
       fontSize: 13,
       fontWeight: FontWeight.w700,
@@ -62,7 +68,7 @@ class LoginTextStyles {
   }
 
   static TextStyle button() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       fontSize: 15,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -70,7 +76,7 @@ class LoginTextStyles {
   }
 
   static TextStyle googleButton() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       fontSize: 14,
       fontWeight: FontWeight.w500,
       letterSpacing: 0,
@@ -78,7 +84,7 @@ class LoginTextStyles {
   }
 
   static TextStyle divider() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: const Color(0xFF7C7C7C),
       fontSize: 12,
       letterSpacing: 0,
@@ -86,7 +92,7 @@ class LoginTextStyles {
   }
 
   static TextStyle error() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: LoginColors.red,
       fontSize: 12,
       letterSpacing: 0,
@@ -94,7 +100,7 @@ class LoginTextStyles {
   }
 
   static TextStyle footer() {
-    return GoogleFonts.poppins(
+    return _baseTextStyle().copyWith(
       color: LoginColors.footer,
       fontSize: 10,
       fontStyle: FontStyle.italic,

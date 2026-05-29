@@ -9,6 +9,7 @@ class AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
+  final TextAlign textAlign;
 
   const AuthTextField({
     super.key,
@@ -18,6 +19,7 @@ class AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
+    this.textAlign = TextAlign.start,
   });
 
   @override
@@ -27,9 +29,10 @@ class AuthTextField extends StatelessWidget {
       cursorColor: LoginColors.red,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      textAlign: textAlign,
       style: LoginTextStyles.fieldText(),
       decoration: InputDecoration(
-        labelText: label,
+        labelText: label.isEmpty ? null : label,
         hintText: hintText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         labelStyle: LoginTextStyles.fieldLabel(),

@@ -72,12 +72,42 @@ class AuthController extends _$AuthController {
     return AuthUiState.fromService(service);
   }
 
-  Future<AuthResult> signIn(String username) async {
+  Future<AuthResult> signIn(String email, String password) async {
     final current = _currentState();
     state = AsyncData(current.copyWith(isSubmitting: true, clearError: true));
 
     final service = ref.read(authServiceProvider);
-    final result = await service.signIn(username);
+    final result = await service.signIn(email, password);
+    state = AsyncData(
+      AuthUiState.fromService(
+        service,
+        errorMessage: result.success ? null : result.errorMessage,
+      ),
+    );
+    return result;
+  }
+
+  Future<AuthResult> signUp(String email, String password) async {
+    final current = _currentState();
+    state = AsyncData(current.copyWith(isSubmitting: true, clearError: true));
+
+    final service = ref.read(authServiceProvider);
+    final result = await service.signUp(email, password);
+    state = AsyncData(
+      AuthUiState.fromService(
+        service,
+        errorMessage: result.success ? null : result.errorMessage,
+      ),
+    );
+    return result;
+  }
+
+  Future<AuthResult> signInWithGoogle() async {
+    final current = _currentState();
+    state = AsyncData(current.copyWith(isSubmitting: true, clearError: true));
+
+    final service = ref.read(authServiceProvider);
+    final result = await service.signInWithGoogle();
     state = AsyncData(
       AuthUiState.fromService(
         service,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../login_design.dart';
+import '../screens/register_step1_email_page.dart';
 import 'auth_text_field.dart';
 import 'login_panel.dart';
 
@@ -13,6 +14,7 @@ class LoginForm extends StatelessWidget {
   final bool isPasswordObscured;
   final VoidCallback onTogglePasswordVisibility;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleSignIn;
 
   const LoginForm({
     super.key,
@@ -23,6 +25,7 @@ class LoginForm extends StatelessWidget {
     required this.isPasswordObscured,
     required this.onTogglePasswordVisibility,
     required this.onSubmit,
+    required this.onGoogleSignIn,
   });
 
   @override
@@ -47,7 +50,7 @@ class LoginForm extends StatelessWidget {
             const SizedBox(height: 8),
             Text(errorMessage!, style: LoginTextStyles.error()),
           ],
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
           AuthTextField(
             controller: passwordController,
             label: 'Password',
@@ -119,7 +122,7 @@ class LoginForm extends StatelessWidget {
                     ),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: isSubmitting ? null : onGoogleSignIn,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -151,7 +154,12 @@ class LoginForm extends StatelessWidget {
                   vertical: 8,
                 ),
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegisterStep1EmailPage()),
+                );
+              },
               child: Text('Create an account', style: LoginTextStyles.action()),
             ),
           ),
