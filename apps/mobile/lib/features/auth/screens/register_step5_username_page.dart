@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../screens/home_screen.dart';
+import '../auth_providers.dart';
 import '../login_design.dart';
 import '../widgets/auth_wizard_layout.dart';
 
-class RegisterStep5UsernamePage extends StatefulWidget {
-  const RegisterStep5UsernamePage({super.key});
+class RegisterStep5UsernamePage extends ConsumerStatefulWidget {
+  final String firstName;
+  final String lastName;
+  final String gender;
+  final DateTime dob;
+
+  const RegisterStep5UsernamePage({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+    required this.gender,
+    required this.dob,
+  });
 
   @override
-  State<RegisterStep5UsernamePage> createState() => _RegisterStep5State();
+  ConsumerState<RegisterStep5UsernamePage> createState() => _RegisterStep5State();
 }
 
-class _RegisterStep5State extends State<RegisterStep5UsernamePage> {
+class _RegisterStep5State extends ConsumerState<RegisterStep5UsernamePage> {
   final _usernameCtrl = TextEditingController();
 
   @override
@@ -19,16 +32,26 @@ class _RegisterStep5State extends State<RegisterStep5UsernamePage> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (_usernameCtrl.text.trim().isEmpty) return;
     
-    // TODO: Update backend with full profile (name, gender, dob, username)
-    // For now, jump to Home
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
-      (route) => false,
+    final result = await ref.read(authControllerProvider.notifier).completeProfile(
+      widget.firstName,
+      widget.lastName,
+      _usernameCtrl.text.trim(),
     );
+
+    if (result.success && mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.errorMessage ?? 'Có lỗi xảy ra')),
+      );
+    }
   }
 
   @override

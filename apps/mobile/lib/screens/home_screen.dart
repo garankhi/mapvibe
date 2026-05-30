@@ -89,7 +89,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: Stack(
         children: [
           // === MAP ===
-          FlutterMap(
+          RepaintBoundary(
+            child: FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _locationService.currentPosition,
@@ -121,14 +122,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
             ],
           ),
+          ),
 
           // === TOP UI (Logo, Avatar, Search) ===
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
+            child: RepaintBoundary(
+              child: Column(
+                children: [
                 // Logo & Avatar Row
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -136,14 +139,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const SizedBox(width: 40), // Balance the avatar
-                      const Text(
-                        'FIDEE',
-                        style: TextStyle(
-                          color: Color(0xFFFF3B30),
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
-                        ),
+                      Image.asset(
+                        'assets/images/logo.png',
+                        height: 32,
+                        cacheHeight: 96,
                       ),
                       GestureDetector(
                         onTap: () => _showProfileMenu(context),
@@ -220,7 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Text(
-                            'Want something /fidee/ today?',
+                            'Want something today?',
                             style: TextStyle(
                               color: Colors.black54,
                               fontSize: 15,
@@ -236,14 +235,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ],
             ),
           ),
-
+          ),
           // === LOCATION DENIED BANNER ===
           if (_showLocationBanner)
             Positioned(
               top: MediaQuery.of(context).padding.top + 140,
               left: 16,
               right: 16,
-              child: _LocationDeniedBanner(
+              child: RepaintBoundary(
+                child: _LocationDeniedBanner(
                 status: _locationService.status,
                 onAllow: () async {
                   if (_locationService.status == LocationStatus.deniedForever) {
@@ -261,6 +261,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                 },
                 onDismiss: () => setState(() => _showLocationBanner = false),
+                ),
               ),
             ),
 
@@ -269,41 +270,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               bottom: 40,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Compass (Left)
-                  _BottomNavIcon(
-                    assetPath: 'assets/icons/Discovery.png',
-                    onTap: _goToMyLocation,
-                    size: 60,
-                    iconSize: 42,
-                  ),
-                  const SizedBox(width: 24),
-                  // Camera (Center)
-                  _BottomNavIcon(
-                    assetPath: 'assets/icons/Camera.png',
-                    onTap: _onCheckIn,
-                    size: 76,
-                    iconSize: 85,
-                  ),
-                  const SizedBox(width: 24),
-                  // Chat (Right)
-                  _BottomNavIcon(
-                    assetPath: 'assets/icons/Chat.png',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chat - tinh nang dang phat trien'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    size: 60,
-                    iconSize: 75,
-                  ),
-                ],
+              child: RepaintBoundary(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Compass (Left)
+                    _BottomNavIcon(
+                      assetPath: 'assets/icons/Discovery.png',
+                      onTap: _goToMyLocation,
+                      size: 60,
+                      iconSize: 42,
+                    ),
+                    const SizedBox(width: 24),
+                    // Camera (Center)
+                    _BottomNavIcon(
+                      assetPath: 'assets/icons/Camera.png',
+                      onTap: _onCheckIn,
+                      size: 76,
+                      iconSize: 32,
+                    ),
+                    const SizedBox(width: 24),
+                    // Messages (Right)
+                    _BottomNavIcon(
+                      assetPath: 'assets/icons/Chat.png',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Messages clicked')),
+                        );
+                      },
+                      size: 60,
+                      iconSize: 75,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -355,7 +355,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'Fidee User',
+              'User',
               style: TextStyle(
                 color: Colors.black87,
                 fontSize: 18,
@@ -435,6 +435,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               width: iconSize,
               height: iconSize,
               fit: BoxFit.contain,
+              cacheWidth: 152,
               errorBuilder: (context, error, stackTrace) =>
                   const Icon(Icons.error, color: Colors.grey),
             ),
@@ -478,7 +479,8 @@ class _PulsingLocationMarkerState extends State<_PulsingLocationMarker>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
+    return RepaintBoundary(
+      child: AnimatedBuilder(
       animation: _animation,
       builder: (_, _) => Stack(
         alignment: Alignment.center,
@@ -509,6 +511,7 @@ class _PulsingLocationMarkerState extends State<_PulsingLocationMarker>
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -608,4 +611,3 @@ class _LocationDeniedBanner extends StatelessWidget {
     );
   }
 }
-

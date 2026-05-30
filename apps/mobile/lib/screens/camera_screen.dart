@@ -8,6 +8,8 @@ import '../features/auth/auth_providers.dart';
 import '../services/auth_service.dart';
 import 'send_image_screen.dart';
 
+List<CameraDescription>? globalCameras;
+
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
 
@@ -23,7 +25,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
 
   late AnimationController _animationController;
   late Animation<double> _shrinkAnimation;
-  late Animation<double> _expandAnimation;
 
   @override
   void initState() {
@@ -32,15 +33,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
     
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 150),
     );
     
-    _shrinkAnimation = Tween<double>(begin: 1.0, end: 0.7).animate(
-      CurvedAnimation(parent: _animationController, curve: const Interval(0.0, 0.4, curve: Curves.easeInOut)),
-    );
-    
-    _expandAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: const Interval(0.4, 1.0, curve: Curves.easeInOut)),
+    _shrinkAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -150,7 +147,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
           children: [
             // Top Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -250,9 +247,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
             
             const Spacer(flex: 1),
             
+            // Pagination Dots Spacer
+            const SizedBox(height: 6),
+            const SizedBox(height: 24),
+            
             // Bottom Controls (Gallery, Capture, Flip)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 80.0),
+              padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Row(
                 children: [
                   // Gallery Preview
@@ -285,7 +286,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
                     animation: _animationController,
                     builder: (context, child) {
                       final shrinkValue = _shrinkAnimation.value;
-                      final expandValue = _expandAnimation.value;
                       
                       // Base sizes
                       const double outerSize = 100.0;
@@ -293,15 +293,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
                       
                       // Calculate current sizes
                       double currentInnerSize = innerBaseSize * shrinkValue;
-                      if (expandValue > 0) {
-                        currentInnerSize = currentInnerSize + (outerSize - currentInnerSize) * expandValue;
+                      if (0.0 > 0) {
+                        currentInnerSize = currentInnerSize + (outerSize - currentInnerSize) * 0.0;
                       }
                       
                       // Calculate border width
-                      double currentBorderWidth = 4.0 * (1.0 - expandValue);
+                      double currentBorderWidth = 4.0 * (1.0 - 0.0);
                       
                       // Color transition (White to Dark Gray)
-                      Color? currentColor = Color.lerp(Colors.white, const Color(0xFF333333), expandValue);
+                      Color? currentColor = Color.lerp(Colors.white, const Color(0xFF333333), 0.0);
 
                       return GestureDetector(
                         onTap: () async {
@@ -342,7 +342,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.red.withValues(alpha: 1.0 - expandValue), 
+                                  color: Colors.red.withValues(alpha: 1.0 - 0.0), 
                                   width: currentBorderWidth
                                 ),
                               ),
@@ -354,11 +354,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
                                     color: currentColor,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: expandValue > 0.5
+                                  child: 0.0 > 0.5
                                       ? Center(
                                           child: Icon(
                                             Icons.send_rounded,
-                                            color: Colors.white.withValues(alpha: (expandValue - 0.5) * 2),
+                                            color: Colors.white.withValues(alpha: (0.0 - 0.5) * 2),
                                             size: 36,
                                           ),
                                         )
@@ -393,11 +393,17 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
               ),
             ),
             
-            const Spacer(flex: 1),
+            const SizedBox(height: 24),
             
-            // History button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            // Bottom Section Height Match
+            SizedBox(
+              height: 120,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
@@ -425,50 +431,51 @@ class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerPr
                 ],
               ),
             ),
-            
-            const Spacer(flex: 1),
-            
-            // Bottom Nav
-            Container(
-              margin: const EdgeInsets.only(bottom: 8, left: 110, right: 110),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const Icon(Icons.grid_view_rounded, color: Colors.grey, size: 28),
+            const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(left: 110, right: 110),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      shape: BoxShape.circle,
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    child: const Icon(Icons.home_filled, color: Colors.white, size: 24),
-                  ),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.chat_bubble_rounded, color: Colors.grey, size: 28),
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.amber,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        const Icon(Icons.grid_view_rounded, color: Colors.grey, size: 28),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
                             shape: BoxShape.circle,
                           ),
-                          child: const Text('1', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: const Icon(Icons.home_filled, color: Colors.white, size: 24),
                         ),
-                      ),
-                    ],
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.chat_bubble_rounded, color: Colors.grey, size: 28),
+                            Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.amber,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Text('1', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 10),
           ],
         ),
       ),

@@ -156,6 +156,21 @@ class AuthController extends _$AuthController {
     state = AsyncData(AuthUiState.fromService(service));
   }
 
+  Future<AuthResult> completeProfile(String firstName, String lastName, String username) async {
+    final current = _currentState();
+    state = AsyncData(current.copyWith(isSubmitting: true, clearError: true));
+
+    final service = ref.read(authServiceProvider);
+    final result = await service.completeProfile(firstName, lastName, username);
+    state = AsyncData(
+      AuthUiState.fromService(
+        service,
+        errorMessage: result.success ? null : result.errorMessage,
+      ),
+    );
+    return result;
+  }
+
   void setError(String message) {
     state = AsyncData(_currentState().copyWith(errorMessage: message));
   }

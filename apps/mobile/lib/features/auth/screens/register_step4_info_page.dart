@@ -6,7 +6,14 @@ import '../widgets/auth_wizard_layout.dart';
 import 'register_step5_username_page.dart';
 
 class RegisterStep4InfoPage extends StatefulWidget {
-  const RegisterStep4InfoPage({super.key});
+  final String firstName;
+  final String lastName;
+
+  const RegisterStep4InfoPage({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+  });
 
   @override
   State<RegisterStep4InfoPage> createState() => _RegisterStep4State();
@@ -22,7 +29,57 @@ class _RegisterStep4State extends State<RegisterStep4InfoPage> {
     // TODO: Save to temp state/provider
     Navigator.push(
       context,
-      MaterialPageRoute<void>(builder: (_) => const RegisterStep5UsernamePage()),
+      MaterialPageRoute<void>(builder: (_) => RegisterStep5UsernamePage(
+        firstName: widget.firstName,
+        lastName: widget.lastName,
+        gender: _gender,
+        dob: _selectedDate!,
+      )),
+    );
+  }
+
+  void _showGenderPicker() {
+    final List<String> genders = ['Nam', 'Nữ', 'Không tiện nói'];
+    int initialIndex = genders.indexOf(_gender);
+    if (initialIndex == -1) initialIndex = 0;
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (_) => CupertinoTheme(
+        data: const CupertinoThemeData(
+          brightness: Brightness.light,
+          textTheme: CupertinoTextThemeData(
+            pickerTextStyle: TextStyle(color: Colors.black, fontSize: 21),
+          ),
+        ),
+        child: Container(
+          height: 250,
+          color: Colors.white,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoPicker(
+                  scrollController: FixedExtentScrollController(initialItem: initialIndex),
+                  itemExtent: 32.0,
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _gender = genders[index];
+                    });
+                  },
+                  children: List<Widget>.generate(genders.length, (int index) {
+                    return Center(child: Text(genders[index]));
+                  }),
+                ),
+              ),
+              CupertinoButton(
+                child: const Text('Xong', style: TextStyle(color: Color(0xFFEF4050))),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -74,22 +131,19 @@ class _RegisterStep4State extends State<RegisterStep4InfoPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 20),
-          Center(
-            child: DropdownButton<String>(
-              value: _gender,
-              icon: const Icon(Icons.keyboard_arrow_down, color: LoginColors.textMuted),
-              elevation: 16,
-              style: LoginTextStyles.title().copyWith(fontSize: 28, color: LoginColors.textMuted),
-              underline: const SizedBox(),
-              onChanged: (String? value) {
-                if (value != null) setState(() => _gender = value);
-              },
-              items: ['Nam', 'Nữ', 'Không tiện nói'].map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+          GestureDetector(
+            onTap: _showGenderPicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              alignment: Alignment.center,
+              child: Text(
+                _gender,
+                style: LoginTextStyles.title().copyWith(
+                  fontSize: 28, 
+                  color: LoginColors.textPrimary,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 8),
