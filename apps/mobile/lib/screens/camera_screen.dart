@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../features/auth/auth_providers.dart';
 import '../services/auth_service.dart';
+import 'send_image_screen.dart';
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -14,16 +15,33 @@ class CameraScreen extends ConsumerStatefulWidget {
   ConsumerState<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends ConsumerState<CameraScreen> {
+class _CameraScreenState extends ConsumerState<CameraScreen> with SingleTickerProviderStateMixin {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   int _selectedCameraIndex = 0;
   bool _isFlashOn = false;
 
+  late AnimationController _animationController;
+  late Animation<double> _shrinkAnimation;
+  late Animation<double> _expandAnimation;
+
   @override
   void initState() {
     super.initState();
     _initCamera();
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    
+    _shrinkAnimation = Tween<double>(begin: 1.0, end: 0.7).animate(
+      CurvedAnimation(parent: _animationController, curve: const Interval(0.0, 0.4, curve: Curves.easeInOut)),
+    );
+    
+    _expandAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: const Interval(0.4, 1.0, curve: Curves.easeInOut)),
+    );
   }
 
   Future<void> _initCamera() async {
@@ -111,6 +129,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -135,13 +154,16 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.map, color: Colors.white, size: 24),
                     ),
-                    child: const Icon(Icons.campaign, color: Colors.white, size: 24),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -259,35 +281,95 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   ),
                   
                   // Capture Button
-                  GestureDetector(
-                    onTap: () async {
-                      if (!_controller!.value.isInitialized) return;
-                      try {
-                        final image = await _controller!.takePicture();
-                        debugPrint('Captured: ${image.path}');
-                        // Handle image
-                      } catch (e) {
-                        debugPrint('Capture error: $e');
+                  AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      final shrinkValue = _shrinkAnimation.value;
+                      final expandValue = _expandAnimation.value;
+                      
+                      // Base sizes
+                      const double outerSize = 100.0;
+                      const double innerBaseSize = 84.0;
+                      
+                      // Calculate current sizes
+                      double currentInnerSize = innerBaseSize * shrinkValue;
+                      if (expandValue > 0) {
+                        currentInnerSize = currentInnerSize + (outerSize - currentInnerSize) * expandValue;
                       }
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.red, width: 4),
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 84,
-                          height: 84,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
+                      
+                      // Calculate border width
+                      double currentBorderWidth = 4.0 * (1.0 - expandValue);
+                      
+                      // Color transition (White to Dark Gray)
+                      Color? currentColor = Color.lerp(Colors.white, const Color(0xFF333333), expandValue);
+
+                      return GestureDetector(
+                        onTap: () async {
+                          if (!_controller!.value.isInitialized || _animationController.isAnimating) return;
+                          
+                          _animationController.forward();
+                          try {
+                            final image = await _controller!.takePicture();
+                            
+                            // Wait for animation to complete if it hasn't already
+                            if (_animationController.isAnimating) {
+                              await Future.delayed(const Duration(milliseconds: 500));
+                            }
+                            
+                            if (!mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(milliseconds: 300),
+                                pageBuilder: (context, animation, secondaryAnimation) => SendImageScreen(imagePath: image.path),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  return FadeTransition(opacity: animation, child: child);
+                                },
+                              ),
+                            );
+                          } catch (e) {
+                            debugPrint('Capture error: $e');
+                            _animationController.reverse();
+                          }
+                        },
+                        child: Hero(
+                          tag: 'capture_to_send_button',
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: Container(
+                              width: outerSize,
+                              height: outerSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.red.withValues(alpha: 1.0 - expandValue), 
+                                  width: currentBorderWidth
+                                ),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: currentInnerSize,
+                                  height: currentInnerSize,
+                                  decoration: BoxDecoration(
+                                    color: currentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: expandValue > 0.5
+                                      ? Center(
+                                          child: Icon(
+                                            Icons.send_rounded,
+                                            color: Colors.white.withValues(alpha: (expandValue - 0.5) * 2),
+                                            size: 36,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   
                   // Flip Camera Button
